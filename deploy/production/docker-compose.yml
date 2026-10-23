@@ -1,0 +1,16 @@
+# Azam portfolio — production on the Scalixity server.
+#
+# Stateless: no volumes, no database, no env. Runs on the host network (like
+# Dream Beans/HRA) so the cloudflared tunnel reaches it on 172.17.0.1:3200
+# (azam-portfolio.scalixity.com).
+name: azam-portfolio
+
+services:
+  azam-portfolio-web:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: azam-portfolio:latest
+    container_name: azam-portfolio
+    restart: always
+    network_mode: host

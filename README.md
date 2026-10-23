@@ -143,7 +143,14 @@ Quality 82-85 is a good balance for logos; use 70-78 for photographs.
 
 ## Deploying
 
-### Netlify (production target)
+### Scalixity server (Docker + Cloudflare tunnel)
+
+Live at **https://azam-portfolio.scalixity.com**. The `Dockerfile` builds the site and serves `dist/` with nginx (`docker/nginx.conf.template` mirrors the `public/_headers` caching rules). `deploy/production/` holds the compose file and a zero-downtime deploy script: it builds, health-checks the new image on a throwaway port, swaps the container, and rolls back automatically if the swap fails.
+
+- **Deploy:** click **Deploy Azam portfolio** on https://ci.scalixity.com, or over SSH run `~/scripts/azam-portfolio-deploy.sh [branch]` (default `main`).
+- **On the server:** checkout at `~/scalixity/azams_portfolio`, container `azam-portfolio`, host network on `127.0.0.1` / `172.17.0.1` port **3200** (the tunnel points at `http://172.17.0.1:3200`).
+
+### Netlify
 
 The repo is deploy-ready for Netlify as-is:
 

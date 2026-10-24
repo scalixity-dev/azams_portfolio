@@ -112,6 +112,46 @@ section[id] {
   color: #fff;
 }
 
+/* ======================================================================= */
+/* Shared SectionHeader reveal — ANY section wrapper with `.in-view` ancestor
+   fades its header elements in with a tight cascade. One template, one
+   motion signature across the whole site. */
+/* ======================================================================= */
+
+@keyframes section-header-fade-up {
+  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes section-header-rail {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.section-header-eyebrow,
+.section-header-headline,
+.section-header-sub {
+  opacity: 0;
+}
+.section-header-rail {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.section-header.text-center .section-header-rail {
+  transform-origin: center;
+}
+
+.in-view .section-header-eyebrow  { animation: section-header-fade-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.10s forwards; }
+.in-view .section-header-rail     { animation: section-header-rail 0.75s cubic-bezier(0.76, 0, 0.24, 1) 0.25s forwards; }
+.in-view .section-header-headline { animation: section-header-fade-up 0.80s cubic-bezier(0.22, 1, 0.36, 1) 0.40s forwards; }
+.in-view .section-header-sub      { animation: section-header-fade-up 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .section-header-eyebrow,
+  .section-header-headline,
+  .section-header-sub { opacity: 1; }
+  .section-header-rail { transform: scaleX(1); }
+}
+
 /* === Prediction match card trick === */
 
 @keyframes predict-fade-up {

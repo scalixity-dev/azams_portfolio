@@ -7,6 +7,7 @@ import {
 } from "react";
 import { reelsRowOne, reelsRowTwo, type Reel } from "../data/reels";
 import { useInView } from "../hooks/useInView";
+import { SectionHeader } from "./shared/SectionHeader";
 
 export function Reels() {
   const { ref, inView } = useInView<HTMLDivElement>();
@@ -21,24 +22,21 @@ export function Reels() {
   return (
     <div
       ref={ref}
-      className={`reels-reveal relative overflow-hidden bg-ink-950 py-20 sm:py-24 md:py-28 lg:py-32 ${
+      className={`reels-reveal relative overflow-hidden bg-ink-950 py-12 sm:py-14 md:py-16 lg:py-20 ${
         inView ? "in-view" : ""
       }`}
     >
-      <div className="mx-auto mb-12 w-full max-w-[1680px] px-5 sm:px-6 md:mb-16 md:px-8 lg:mb-20 lg:px-10 xl:px-14">
-        <p className="reels-label text-[13px] font-medium tracking-[0.24em] text-muted uppercase sm:text-[14px] md:text-[15px] lg:text-[16px]">
-          Reels
-        </p>
-        <div className="reels-rail mt-3 h-px w-24 bg-line sm:w-32" />
-        <h3 className="reels-headline mt-6 font-display text-3xl leading-[1.1] font-normal text-silver sm:text-4xl md:text-5xl lg:text-6xl">
-          Moments{" "}
-          <span className="italic text-silver-dim">worth filming.</span>
-        </h3>
-        <p className="reels-sub mt-5 max-w-xl text-[13px] leading-relaxed text-silver-dim sm:text-sm">
-          A rolling look at Azam's latest brand activations and stage moments —
-          drag or swipe to scroll, tap any reel to unmute, tap the arrow to open
-          it on Instagram.
-        </p>
+      <div className="mx-auto mb-8 w-full max-w-[1680px] px-4 sm:px-5 md:mb-10 md:px-6 lg:mb-12 lg:px-8 xl:px-10">
+        <SectionHeader
+          eyebrow="Reels"
+          headline={
+            <>
+              Moments{" "}
+              <span className="italic text-silver-dim">worth filming.</span>
+            </>
+          }
+          sub="Drag to scroll. Tap any reel to unmute."
+        />
       </div>
 
       {/* Row 1 — auto-scrolls right → left, user can drag/scroll freely */}

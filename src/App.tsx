@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Hero } from "./components/Hero";
 import { About } from "./components/About";
+import { SectionDivider } from "./components/shared/SectionDivider";
 
 // Only Hero + About load eagerly (above the fold). Everything else is
 // code-split so initial JS payload stays small and main-thread work is
@@ -23,36 +24,46 @@ const SectionFallback = () => <div className="h-[60vh] bg-ink-950" aria-hidden /
 
 function App() {
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[color:var(--color-ink-950)] text-[color:var(--color-silver)]">
+    <main className="relative min-h-screen w-full overflow-x-hidden bg-ink-950 text-silver">
       <Hero />
       <About />
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <Proof />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <Social />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <Reels />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <Industries />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <WhyBrands />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <Creates />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <Formats />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <Process />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <MagicTrick />
       </Suspense>
+      <SectionDivider />
       <Suspense fallback={<SectionFallback />}>
         <Contact />
       </Suspense>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInView } from "../hooks/useInView";
+import { SectionHeader } from "./shared/SectionHeader";
 
 type Suit = "♠" | "♥" | "♦" | "♣";
 type Card = { rank: string; suit: Suit; color: "red" | "dark" };
@@ -68,7 +69,7 @@ export function MagicTrick() {
     <section
       ref={ref}
       id="magic-trick"
-      className={`predict-reveal relative overflow-hidden bg-ink-950 pt-6 pb-20 sm:pt-8 sm:pb-24 md:pt-10 md:pb-28 lg:pt-12 lg:pb-32 ${
+      className={`predict-reveal relative overflow-hidden bg-ink-950 pt-6 pb-12 sm:pt-8 sm:pb-14 md:pt-10 md:pb-16 lg:pt-12 lg:pb-20 ${
         inView ? "in-view" : ""
       }`}
     >
@@ -84,21 +85,18 @@ export function MagicTrick() {
 
       <div className="relative mx-auto w-full max-w-[1680px] px-4 sm:px-5 md:px-6 lg:px-8 xl:px-10">
         {/* Section header */}
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="predict-label text-[13px] font-medium tracking-[0.24em] text-muted uppercase sm:text-[14px] md:text-[15px] lg:text-[16px]">
-            A Prediction
-          </p>
-          <div className="predict-rail mx-auto mt-3 h-px w-24 bg-line sm:w-32" />
-          <h3 className="predict-headline mt-6 font-display text-3xl leading-[1.1] font-normal text-silver sm:text-4xl md:text-5xl">
-            One card is sealed.{" "}
-            <span className="italic text-silver-dim">
-              Pick yours — we'll see.
-            </span>
-          </h3>
-          <p className="predict-sub mt-4 text-[13px] leading-relaxed text-silver-dim sm:text-sm">
-            The card above was chosen before you arrived. Tap any card below.
-          </p>
-        </div>
+        <SectionHeader
+          align="center"
+          maxWidth="2xl"
+          eyebrow="A Prediction"
+          headline={
+            <>
+              One card is sealed.{" "}
+              <span className="italic text-silver-dim">Pick yours.</span>
+            </>
+          }
+          sub="The card above was chosen before you arrived."
+        />
 
         {/* Stage — compact, horizontal composition */}
         <div className="relative mx-auto mt-12 flex max-w-md flex-col items-center gap-10 sm:mt-14 sm:gap-12">

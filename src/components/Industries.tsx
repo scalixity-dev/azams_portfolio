@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { brandGroups, type BrandGroup } from "../data/brands";
 import { getLogo } from "../data/logos";
 import { useInView } from "../hooks/useInView";
+import { SectionHeader } from "./shared/SectionHeader";
 
 type IndustryKey = BrandGroup["id"];
 
@@ -96,27 +97,23 @@ export function Industries() {
     <section
       ref={ref}
       id="industries"
-      className={`industries-reveal relative overflow-hidden bg-ink-950 py-16 sm:py-20 md:py-24 lg:py-28 ${
+      className={`industries-reveal relative overflow-hidden bg-ink-950 py-12 sm:py-14 md:py-16 lg:py-20 ${
         inView ? "in-view" : ""
       }`}
     >
       <div className="mx-auto w-full max-w-[1680px] px-4 sm:px-5 md:px-6 lg:px-8 xl:px-10">
         {/* Header */}
-        <div className="mb-8 md:mb-12 lg:mb-14">
-          <p className="industries-label text-[13px] font-medium tracking-[0.24em] text-muted uppercase sm:text-[14px] md:text-[15px] lg:text-[16px]">
-            Trusted by the World
-          </p>
-          <div className="industries-rail mt-3 h-px w-24 bg-line sm:w-32" />
-          <h3 className="industries-headline mt-6 font-display text-2xl leading-[1.15] font-normal text-silver sm:text-3xl md:text-4xl lg:text-5xl">
-            Pick an industry,{" "}
-            <span className="italic text-silver-dim">meet the partners.</span>
-          </h3>
-          <p className="industries-sub mt-4 max-w-xl text-[13px] leading-relaxed text-silver-dim sm:text-sm">
-            Luxury hospitality, government, real-estate, media and global
-            consumer brands — tap a tile to see who's hosted Azam on their
-            rooms, screens and stages.
-          </p>
-        </div>
+        <SectionHeader
+          className="mb-8 md:mb-10 lg:mb-12"
+          eyebrow="Trusted by the World"
+          headline={
+            <>
+              A roster,{" "}
+              <span className="italic text-silver-dim">by industry.</span>
+            </>
+          }
+          sub="Luxury hospitality to Dubai Police. Tap any tile to see the full list."
+        />
 
         {/* Horizontal industry rail */}
         <div className="industries-rail-wrap group/rail relative">

@@ -11,7 +11,7 @@ export function WhyBrands() {
     >
       <section
         id="why-brands"
-        className="relative mx-auto grid min-h-screen w-full max-w-[1680px] grid-rows-[auto_1fr] px-5 py-20 sm:px-6 md:px-8 md:py-24 lg:px-10 lg:py-32 xl:px-14"
+        className="relative mx-auto grid w-full max-w-[1680px] grid-rows-[auto_1fr] px-4 py-12 sm:px-5 sm:py-14 md:px-6 md:py-16 lg:px-8 lg:py-20 xl:px-10"
       >
         <div className="mb-12 md:mb-16 lg:mb-20">
           <p className="why-section-label text-[13px] font-medium tracking-[0.24em] text-muted uppercase sm:text-[14px] md:text-[15px] lg:text-[16px]">

@@ -12,7 +12,7 @@ export function About() {
     <section
       ref={ref}
       id="about"
-      className={`about-reveal relative w-full overflow-hidden bg-ink-950 pt-16 sm:pt-20 md:pt-24 lg:pt-32 ${
+      className={`about-reveal relative w-full overflow-hidden bg-ink-950 pt-10 pb-12 sm:pt-12 sm:pb-14 md:pt-14 md:pb-16 lg:pt-16 lg:pb-20 ${
         inView ? "in-view" : ""
       }`}
     >

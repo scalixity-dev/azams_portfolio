@@ -6,30 +6,42 @@ type Suit = "♠" | "♥" | "♦" | "♣";
 type Card = { rank: string; suit: Suit; color: "red" | "dark" };
 
 type Phase =
-  | "idle"
-  | "ready" // sealed card + 5 options, waiting for pick
-  | "merging" // user picked; chosen card slides to meet the prediction
-  | "revealing" // both cards flip in unison
-  | "done";
+  | "idle" //        hidden
+  | "intro" //       card settles face-down, briefly waiting
+  | "shuffling" //   card face-up, rank/suit cycles rapidly, STOP button visible
+  | "revealing" //   STOP tapped, card locks to the forced value with a dramatic flourish
+  | "done"; //       result shown, offer replay
 
-/* Rotating prediction cards — each replay uses the next card so repeat
- * players can't deduce "it's always Ace of Spades". After 5 tries the
- * cycle restarts. Each card is dramatic/photogenic. */
-const PREDICTIONS: Card[] = [
+/* Rotating forced reveal — a different card each play so repeat players
+ * can't call the pattern. The user is told "we stopped where you did",
+ * but we actually always land on whichever card is next in this list. */
+const FORCED: Card[] = [
+  { rank: "7", suit: "♥", color: "red" },
   { rank: "A", suit: "♠", color: "dark" },
-  { rank: "Q", suit: "♥", color: "red" },
-  { rank: "J", suit: "♦", color: "red" },
+  { rank: "Q", suit: "♦", color: "red" },
   { rank: "K", suit: "♣", color: "dark" },
-  { rank: "10", suit: "♥", color: "red" },
+  { rank: "10", suit: "♠", color: "dark" },
 ];
+
+/* Pool used only for the rapid flicker during the shuffle phase */
+const ALL_SUITS: Suit[] = ["♠", "♥", "♦", "♣"];
+const ALL_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+
+function randomCard(): Card {
+  const suit = ALL_SUITS[Math.floor(Math.random() * ALL_SUITS.length)];
+  const rank = ALL_RANKS[Math.floor(Math.random() * ALL_RANKS.length)];
+  const color: "red" | "dark" = suit === "♥" || suit === "♦" ? "red" : "dark";
+  return { rank, suit, color };
+}
 
 export function MagicTrick() {
   const { ref, inView } = useInView<HTMLElement>({ threshold: 0.25 });
   const [phase, setPhase] = useState<Phase>("idle");
+  const [card, setCard] = useState<Card>(() => randomCard());
   const [round, setRound] = useState(0);
-  const [pickedIndex, setPickedIndex] = useState<number | null>(null);
   const startedRef = useRef(false);
   const timers = useRef<number[]>([]);
+  const shuffleIntervalRef = useRef<number | null>(null);
 
   const schedule = useCallback((fn: () => void, ms: number) => {
     const id = window.setTimeout(fn, ms);
@@ -40,308 +52,274 @@ export function MagicTrick() {
     timers.current.forEach((id) => window.clearTimeout(id));
     timers.current = [];
   }, []);
-  useEffect(() => () => clearTimers(), [clearTimers]);
+  const stopShuffle = useCallback(() => {
+    if (shuffleIntervalRef.current !== null) {
+      window.clearInterval(shuffleIntervalRef.current);
+      shuffleIntervalRef.current = null;
+    }
+  }, []);
 
+  useEffect(
+    () => () => {
+      clearTimers();
+      stopShuffle();
+    },
+    [clearTimers, stopShuffle],
+  );
+
+  // Kick off: idle → intro → shuffling once the section is on screen
   useEffect(() => {
     if (!inView || startedRef.current) return;
     startedRef.current = true;
-    schedule(() => setPhase("ready"), 500);
+    schedule(() => setPhase("intro"), 400);
+    schedule(() => setPhase("shuffling"), 1400);
   }, [inView, schedule]);
 
-  const prediction = PREDICTIONS[round % PREDICTIONS.length];
+  // Rapid card flicker during shuffle (~11 updates/second)
+  useEffect(() => {
+    if (phase !== "shuffling") return;
+    shuffleIntervalRef.current = window.setInterval(() => {
+      setCard(randomCard());
+    }, 90);
+    return stopShuffle;
+  }, [phase, stopShuffle]);
 
-  const handlePick = (idx: number) => {
-    if (phase !== "ready") return;
-    setPickedIndex(idx);
-    setPhase("merging");
-    schedule(() => setPhase("revealing"), 650);
-    schedule(() => setPhase("done"), 1800);
+  const handleStop = () => {
+    if (phase !== "shuffling") return;
+    stopShuffle();
+    // Lock in the forced card for this round
+    const forced = FORCED[round % FORCED.length];
+    setCard(forced);
+    setPhase("revealing");
+    schedule(() => setPhase("done"), 1500);
   };
 
   const reset = () => {
     clearTimers();
-    setPickedIndex(null);
-    setRound((r) => r + 1);
-    setPhase("ready");
+    stopShuffle();
+    setRound((n) => n + 1);
+    setCard(randomCard());
+    setPhase("shuffling");
   };
 
   return (
     <section
       ref={ref}
       id="magic-trick"
-      className={`predict-reveal relative overflow-hidden bg-ink-950 pt-6 pb-12 sm:pt-8 sm:pb-14 md:pt-10 md:pb-16 lg:pt-12 lg:pb-20 ${
+      className={`stopper-reveal relative overflow-hidden bg-ink-950 pt-6 pb-12 sm:pt-8 sm:pb-14 md:pt-10 md:pb-16 lg:pt-12 lg:pb-20 ${
         inView ? "in-view" : ""
       }`}
     >
-      {/* Portfolio-matched backdrop */}
+      {/* Stage lighting */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(60,100,200,0.18) 0%, rgba(30,55,130,0.08) 40%, rgba(10,16,34,0) 72%)",
+            "radial-gradient(ellipse 50% 45% at 50% 55%, rgba(60,100,200,0.2) 0%, rgba(30,55,130,0.08) 42%, rgba(10,16,34,0) 72%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse at center, transparent 55%, rgba(5,7,12,0.55) 100%)",
         }}
       />
 
       <div className="relative mx-auto w-full max-w-[1680px] px-4 sm:px-5 md:px-6 lg:px-8 xl:px-10">
-        {/* Section header */}
         <SectionHeader
           align="center"
-          maxWidth="2xl"
-          eyebrow="A Prediction"
+          maxWidth="xl"
+          eyebrow="A Small Illusion"
           headline={
             <>
-              One card is sealed.{" "}
-              <span className="italic text-silver-dim">Pick yours.</span>
+              Say when.{" "}
+              <span className="italic text-silver-dim">We'll stop there.</span>
             </>
           }
-          sub="The card above was chosen before you arrived."
+          sub="Watch the deck shuffle. Tap stop whenever you like — we'll land right where you did."
         />
 
-        {/* Stage — compact, horizontal composition */}
-        <div className="relative mx-auto mt-12 flex max-w-md flex-col items-center gap-10 sm:mt-14 sm:gap-12">
-          {/* Prediction card */}
-          <div className="relative flex flex-col items-center gap-3">
-            <span className="predict-tag text-[10px] font-medium tracking-[0.32em] text-muted uppercase sm:text-[11px]">
-              Sealed Prediction
-            </span>
-            <PredictionCard
-              card={prediction}
-              revealed={phase === "revealing" || phase === "done"}
-              merging={phase === "merging"}
-            />
-            {/* Sparkles on match */}
-            {(phase === "revealing" || phase === "done") && <SparkleRing />}
+        {/* Stage */}
+        <div className="relative mx-auto mt-10 flex min-h-80 w-full max-w-sm flex-col items-center sm:mt-12 md:min-h-90">
+          {/* Floor glow */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-6 bottom-0 h-20 opacity-70"
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse at 50% 100%, rgba(138,160,255,0.22) 0%, transparent 70%)",
+            }}
+          />
+
+          {/* Card */}
+          <div
+            className={`stopper-card-wrap relative mb-8 ${
+              phase === "shuffling" ? "is-shuffling" : ""
+            } ${phase === "revealing" || phase === "done" ? "is-revealed" : ""}`}
+            aria-live="polite"
+            aria-atomic
+          >
+            <SingleCard card={card} />
+            {(phase === "revealing" || phase === "done") && <SparkleBurst />}
           </div>
 
-          {/* 5 face-down options */}
-          <div className="relative w-full">
-            <div className="flex justify-center gap-2 sm:gap-3 md:gap-4">
-              {[0, 1, 2, 3, 4].map((idx) => {
-                const isPicked = pickedIndex === idx;
-                const otherPicked = pickedIndex !== null && !isPicked;
-                return (
-                  <button
-                    key={`${round}-${idx}`}
-                    type="button"
-                    onClick={() => handlePick(idx)}
-                    disabled={phase !== "ready"}
-                    aria-label={`Pick card ${idx + 1}`}
-                    className={`option-card group relative aspect-7/10 w-14 overflow-hidden rounded-md border transition-all duration-500 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:w-16 md:w-20 ${
-                      phase === "ready"
-                        ? "cursor-pointer border-line/80 hover:-translate-y-2 hover:border-accent/60 hover:shadow-[0_12px_30px_rgba(138,160,255,0.3)]"
-                        : "cursor-default border-line"
-                    } ${
-                      isPicked
-                        ? "z-10 scale-110 -translate-y-6 border-accent shadow-[0_18px_40px_rgba(138,160,255,0.5)]"
-                        : otherPicked
-                          ? "opacity-30 scale-90"
-                          : ""
-                    }`}
+          {/* Action area — fixed slot so page doesn't jump */}
+          <div className="relative flex min-h-28 w-full flex-col items-center justify-start gap-3 text-center">
+            {phase === "intro" && (
+              <p className="stopper-prompt font-display text-base italic text-silver-dim sm:text-lg">
+                Watch the deck
+                <Dots />
+              </p>
+            )}
+
+            {phase === "shuffling" && (
+              <button
+                type="button"
+                onClick={handleStop}
+                className="stopper-stop group relative inline-flex items-center gap-2 rounded-full border border-accent/60 bg-[rgba(138,160,255,0.12)] px-8 py-3 text-[12px] font-medium tracking-[0.3em] text-silver uppercase shadow-[0_12px_30px_rgba(138,160,255,0.3)] backdrop-blur-md transition-all duration-300 hover:border-accent hover:bg-[rgba(138,160,255,0.2)] hover:shadow-[0_16px_38px_rgba(138,160,255,0.4)] sm:text-[13px]"
+              >
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    boxShadow:
+                      "0 0 0 0 rgba(138,160,255,0.4)",
+                    animation:
+                      "stopper-pulse 2s cubic-bezier(0.22, 1, 0.36, 1) infinite",
+                  }}
+                />
+                <span className="relative flex h-2 w-2 shrink-0 rounded-full bg-accent">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                </span>
+                Stop
+              </button>
+            )}
+
+            {phase === "revealing" && (
+              <p className="stopper-prompt text-[12px] tracking-[0.3em] text-muted uppercase sm:text-[13px]">
+                Locked in
+              </p>
+            )}
+
+            {phase === "done" && (
+              <>
+                <p className="stopper-result font-display text-xl leading-tight text-silver sm:text-2xl md:text-3xl">
+                  Your card:{" "}
+                  <span
+                    className="font-serif font-bold"
                     style={{
-                      transitionDelay:
-                        phase === "ready"
-                          ? `${idx * 60}ms`
-                          : "0ms",
+                      color: card.color === "red" ? "#ff6b6b" : undefined,
                     }}
                   >
-                    <CardBack revealed={isPicked && (phase === "revealing" || phase === "done")} card={prediction} />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Prompt below options */}
-            <p className="predict-prompt mt-6 text-center text-[12px] tracking-[0.22em] text-muted uppercase sm:text-[13px]">
-              {phase === "ready" && "Tap any card"}
-              {phase === "merging" && "Watching your choice…"}
-              {(phase === "revealing" || phase === "done") &&
-                `${prediction.rank} ${prediction.suit} — exactly as predicted.`}
-            </p>
+                    {card.rank} {card.suit}
+                  </span>
+                </p>
+                <p className="text-[11px] tracking-[0.24em] text-muted uppercase sm:text-[12px]">
+                  Stopped exactly where we needed you to.
+                </p>
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="stopper-replay group mt-3 inline-flex items-center gap-2 rounded-full border border-line bg-ink-900/70 px-5 py-2.5 text-[11px] font-medium tracking-[0.22em] text-silver-dim uppercase backdrop-blur-md transition-all duration-300 hover:border-accent/50 hover:text-silver sm:text-[12px]"
+                >
+                  <RefreshIcon />
+                  Again
+                </button>
+              </>
+            )}
           </div>
-
-          {/* Replay */}
-          {phase === "done" && (
-            <button
-              type="button"
-              onClick={reset}
-              className="predict-replay group inline-flex items-center gap-2 rounded-full border border-line bg-ink-900/70 px-5 py-2.5 text-[11px] font-medium tracking-[0.22em] text-silver-dim uppercase backdrop-blur-md transition-all duration-300 hover:border-accent/50 hover:text-silver sm:text-[12px]"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-3.5 w-3.5 transition-transform duration-500 group-hover:-rotate-180"
-                aria-hidden
-              >
-                <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8" />
-                <path d="M21 3v5h-5" />
-              </svg>
-              Try another
-            </button>
-          )}
         </div>
       </div>
     </section>
   );
 }
 
-/* === The sealed prediction card at top === */
-function PredictionCard({
-  card,
-  revealed,
-  merging,
-}: {
-  card: Card;
-  revealed: boolean;
-  merging: boolean;
-}) {
+/* === Single card === */
+function SingleCard({ card }: { card: Card }) {
   return (
-    <div
-      className={`relative aspect-7/10 w-24 overflow-visible transition-transform duration-500 sm:w-28 md:w-32 ${
-        merging ? "scale-105" : ""
-      } ${revealed ? "shadow-[0_30px_60px_rgba(138,160,255,0.4)]" : ""}`}
-    >
-      <div
-        className={`relative h-full w-full rounded-lg transition-transform duration-700 transform-3d ${
-          revealed ? "transform-[rotateY(180deg)]" : ""
-        }`}
-      >
-        {/* Back */}
-        <div className="absolute inset-0 overflow-hidden rounded-lg border border-silver-dim/25 bg-linear-to-br from-ink-800 via-ink-900 to-[#0b1030] backface-hidden">
-          <CardBackPattern />
-        </div>
-        {/* Face */}
-        <div className="absolute inset-0 overflow-hidden rounded-lg border border-silver/50 bg-linear-to-br from-white to-[#f3f3ee] transform-[rotateY(180deg)] backface-hidden">
-          <CardFace card={card} large />
-        </div>
-      </div>
+    <div className="stopper-card relative aspect-7/10 w-36 overflow-hidden rounded-xl border border-silver/40 bg-linear-to-br from-white to-[#f3f3ee] shadow-[0_18px_40px_rgba(138,160,255,0.3)] sm:w-40 md:w-44 lg:w-48">
+      <CardFace card={card} />
     </div>
   );
 }
 
-/* === The 5 face-down option cards === */
-function CardBack({ revealed, card }: { revealed: boolean; card: Card }) {
+function CardFace({ card }: { card: Card }) {
+  const color = card.color === "red" ? "#c22" : "#0a0e1a";
   return (
-    <div
-      className={`relative h-full w-full rounded-md transition-transform duration-700 transform-3d ${
-        revealed ? "transform-[rotateY(180deg)]" : ""
-      }`}
-    >
-      <div className="absolute inset-0 overflow-hidden rounded-md bg-linear-to-br from-ink-800 via-ink-900 to-[#0b1030] backface-hidden">
-        <CardBackPattern />
-      </div>
-      <div className="absolute inset-0 overflow-hidden rounded-md border border-silver/50 bg-linear-to-br from-white to-[#f3f3ee] transform-[rotateY(180deg)] backface-hidden">
-        <CardFace card={card} />
-      </div>
-    </div>
-  );
-}
-
-function CardBackPattern() {
-  return (
-    <svg viewBox="0 0 100 140" className="absolute inset-0 h-full w-full" aria-hidden>
-      <defs>
-        <pattern id="pb" x="0" y="0" width="7" height="7" patternUnits="userSpaceOnUse">
-          <circle cx="3.5" cy="3.5" r="0.4" fill="rgba(138,160,255,0.4)" />
-        </pattern>
-      </defs>
-      <rect width="100" height="140" fill="url(#pb)" />
-      <rect x="5" y="5" width="90" height="130" fill="none" stroke="rgba(184,186,196,0.3)" strokeWidth="0.5" rx="3" />
-      <g transform="translate(50 70)">
-        <path d="M0 -28 L20 0 L0 28 L-20 0 Z" fill="none" stroke="rgba(138,160,255,0.55)" strokeWidth="0.6" />
-        <path d="M0 -18 L13 0 L0 18 L-13 0 Z" fill="none" stroke="rgba(184,186,196,0.5)" strokeWidth="0.4" />
-        <circle cx="0" cy="0" r="3" fill="rgba(138,160,255,0.3)" />
+    <svg viewBox="0 0 140 200" className="absolute inset-0 h-full w-full" aria-hidden>
+      {/* Top-left corner */}
+      <g fill={color}>
+        <text
+          x="12"
+          y="26"
+          fontFamily="'Playfair Display', serif"
+          fontSize="22"
+          fontWeight="700"
+        >
+          {card.rank}
+        </text>
+        <text x="12" y="42" fontSize="14">
+          {card.suit}
+        </text>
       </g>
+      {/* Big centered suit */}
+      <g transform="translate(70 100)" fill={color}>
+        <text textAnchor="middle" dominantBaseline="central" fontSize="76">
+          {card.suit}
+        </text>
+      </g>
+      {/* Bottom-right corner (rotated) */}
+      <g fill={color} transform="rotate(180 70 100)">
+        <text
+          x="12"
+          y="26"
+          fontFamily="'Playfair Display', serif"
+          fontSize="22"
+          fontWeight="700"
+        >
+          {card.rank}
+        </text>
+        <text x="12" y="42" fontSize="14">
+          {card.suit}
+        </text>
+      </g>
+      {/* AZAM wordmark */}
+      <text
+        x="70"
+        y="188"
+        textAnchor="middle"
+        fontFamily="'Playfair Display', serif"
+        fontSize="6"
+        letterSpacing="2.2"
+        fill="rgba(10,14,26,0.4)"
+      >
+        AZAM
+      </text>
     </svg>
   );
 }
 
-function CardFace({ card, large = false }: { card: Card; large?: boolean }) {
-  const color = card.color === "red" ? "#c22" : "#0a0e1a";
-  return (
-    <div
-      className={`flex h-full w-full flex-col justify-between font-serif leading-none ${
-        large ? "p-2 sm:p-2.5 md:p-3" : "p-1 sm:p-1.5"
-      }`}
-      style={{ color }}
-    >
-      <div className="flex flex-col items-start">
-        <span
-          className={`font-bold ${
-            large
-              ? "text-[14px] sm:text-[16px] md:text-[18px]"
-              : "text-[9px] sm:text-[10px] md:text-[12px]"
-          }`}
-        >
-          {card.rank}
-        </span>
-        <span
-          className={
-            large
-              ? "text-[12px] sm:text-[14px] md:text-[16px]"
-              : "text-[8px] sm:text-[9px] md:text-[11px]"
-          }
-        >
-          {card.suit}
-        </span>
-      </div>
-      <div className="flex flex-1 items-center justify-center">
-        <span
-          className={`drop-shadow-[0_1px_2px_rgba(0,0,0,0.1)] ${
-            large
-              ? "text-[32px] sm:text-[42px] md:text-[52px]"
-              : "text-[18px] sm:text-[22px] md:text-[28px]"
-          }`}
-        >
-          {card.suit}
-        </span>
-      </div>
-      <div className="flex flex-col items-end" style={{ transform: "rotate(180deg)" }}>
-        <span
-          className={`font-bold ${
-            large
-              ? "text-[14px] sm:text-[16px] md:text-[18px]"
-              : "text-[9px] sm:text-[10px] md:text-[12px]"
-          }`}
-        >
-          {card.rank}
-        </span>
-        <span
-          className={
-            large
-              ? "text-[12px] sm:text-[14px] md:text-[16px]"
-              : "text-[8px] sm:text-[9px] md:text-[11px]"
-          }
-        >
-          {card.suit}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/* === Sparkle ring around the prediction card on reveal === */
-function SparkleRing() {
+/* === Sparkle burst on reveal === */
+function SparkleBurst() {
   const stars = [
-    { x: "-20%", y: "15%", size: 10, delay: 60 },
-    { x: "115%", y: "20%", size: 14, delay: 180 },
-    { x: "-15%", y: "65%", size: 8, delay: 320 },
-    { x: "118%", y: "70%", size: 11, delay: 90 },
-    { x: "45%", y: "-15%", size: 7, delay: 250 },
-    { x: "55%", y: "108%", size: 9, delay: 380 },
-    { x: "-10%", y: "40%", size: 6, delay: 420 },
-    { x: "110%", y: "45%", size: 8, delay: 150 },
+    { x: "-15%", y: "15%", size: 10, delay: 60 },
+    { x: "108%", y: "20%", size: 14, delay: 180 },
+    { x: "-10%", y: "60%", size: 8, delay: 320 },
+    { x: "110%", y: "65%", size: 11, delay: 90 },
+    { x: "40%", y: "-10%", size: 7, delay: 250 },
+    { x: "60%", y: "100%", size: 9, delay: 380 },
+    { x: "-5%", y: "40%", size: 6, delay: 420 },
+    { x: "105%", y: "45%", size: 8, delay: 150 },
   ];
   return (
     <div className="pointer-events-none absolute inset-0 z-20" aria-hidden>
       {stars.map((s, i) => (
         <span
           key={i}
-          className="predict-sparkle absolute block"
+          className="stopper-sparkle absolute block"
           style={{
             left: s.x,
             top: s.y,
@@ -359,5 +337,33 @@ function SparkleRing() {
         </span>
       ))}
     </div>
+  );
+}
+
+function Dots() {
+  return (
+    <span className="ml-1 inline-flex gap-0.5">
+      <span className="thinking-dot">.</span>
+      <span className="thinking-dot">.</span>
+      <span className="thinking-dot">.</span>
+    </span>
+  );
+}
+
+function RefreshIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-3.5 w-3.5 transition-transform duration-500 group-hover:-rotate-180"
+      aria-hidden
+    >
+      <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8" />
+      <path d="M21 3v5h-5" />
+    </svg>
   );
 }

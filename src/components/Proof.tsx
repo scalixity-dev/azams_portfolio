@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import thirdSectionImg from "../assets/third-section.webp";
 import { useInView } from "../hooks/useInView";
+import { SectionHeader } from "./shared/SectionHeader";
 
 type Item = {
   numeric?: number;
@@ -32,12 +33,10 @@ export function Proof() {
         id="proof"
         className="relative z-10 mx-auto grid w-full max-w-[1680px] grid-rows-[auto_1fr_auto] px-4 py-12 sm:px-5 sm:py-14 md:px-6 md:py-16 lg:px-8 lg:py-20 xl:px-10"
       >
-        <div className="mb-12 md:mb-16 lg:mb-20">
-          <p className="proof-section-label text-[13px] font-medium tracking-[0.24em] text-muted uppercase sm:text-[14px] md:text-[15px] lg:text-[16px]">
-            Proof at a Glance
-          </p>
-          <div className="proof-rail mt-3 h-px w-24 bg-line sm:w-32" />
-        </div>
+        <SectionHeader
+          className="mb-8 md:mb-10 lg:mb-12"
+          eyebrow="Proof at a Glance"
+        />
 
         <div className="flex min-h-0 flex-col justify-center">
           <div className="grid grid-cols-1 divide-y divide-line/60 md:grid-cols-3 md:divide-x md:divide-y-0">

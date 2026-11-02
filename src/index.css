@@ -152,6 +152,84 @@ section[id] {
   .section-header-rail { transform: scaleX(1); }
 }
 
+/* === "Say when" — the Stopper trick === */
+
+/* Card during the shuffle: tiny wiggle to suggest motion while the inner
+   face flickers through random cards. Pulsing accent glow underneath. */
+@keyframes stopper-wiggle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-1px) rotate(-0.6deg); }
+  50%      { transform: translateY(1px) rotate(0deg); }
+  75%      { transform: translateY(-1px) rotate(0.6deg); }
+}
+@keyframes stopper-pulse-glow {
+  0%, 100% { box-shadow: 0 18px 40px rgba(138,160,255,0.3); }
+  50%      { box-shadow: 0 22px 50px rgba(138,160,255,0.5); }
+}
+.stopper-card-wrap.is-shuffling .stopper-card {
+  animation:
+    stopper-wiggle 0.9s ease-in-out infinite,
+    stopper-pulse-glow 1.4s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+/* On reveal: card locks into place, scales up, glows hard */
+@keyframes stopper-lock {
+  0%   { transform: scale(1); filter: blur(2px); }
+  40%  { transform: scale(1.14) rotate(-2deg); filter: blur(0); }
+  100% { transform: scale(1.08) rotate(0deg); filter: blur(0); }
+}
+.stopper-card-wrap.is-revealed .stopper-card {
+  animation: stopper-lock 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  box-shadow: 0 30px 60px rgba(138,160,255,0.5);
+}
+
+/* STOP button halo pulse */
+@keyframes stopper-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(138,160,255,0.35); }
+  70%  { box-shadow: 0 0 0 16px rgba(138,160,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(138,160,255,0); }
+}
+
+/* Prompt + result fade */
+@keyframes stopper-prompt-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stopper-prompt,
+.stopper-result,
+.stopper-stop,
+.stopper-replay {
+  animation: stopper-prompt-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Sparkles */
+@keyframes stopper-sparkle {
+  0%   { opacity: 0; transform: scale(0.2) rotate(0deg); }
+  40%  { opacity: 1; transform: scale(1.3) rotate(90deg); }
+  100% { opacity: 0; transform: scale(0.6) rotate(180deg); }
+}
+.stopper-sparkle {
+  opacity: 0;
+  animation: stopper-sparkle 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite both;
+  filter: drop-shadow(0 0 6px rgba(184, 186, 196, 0.6));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stopper-card-wrap.is-shuffling .stopper-card,
+  .stopper-card-wrap.is-revealed .stopper-card,
+  .stopper-prompt,
+  .stopper-result,
+  .stopper-stop,
+  .stopper-replay,
+  .stopper-sparkle {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 18px 40px rgba(138,160,255,0.3);
+  }
+}
+
 /* === Prediction match card trick === */
 
 @keyframes predict-fade-up {
@@ -233,70 +311,64 @@ section[id] {
   }
 }
 
-/* === Industries explorer — horizontal rail with snap + hidden scrollbar === */
-.industries-scroller {
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  touch-action: pan-x pan-y;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.industries-scroller::-webkit-scrollbar {
-  display: none;
-}
-.industries-scroller [data-industry-card] {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-}
+/* === Industries explorer — sidebar + logo grid === */
 
-
-@keyframes industries-fade-up {
+/* === Mobile accordion === */
+/* Each item's logos stagger in when the panel opens (not when the whole
+   section enters view — the panel can open at any time). */
+@keyframes accordion-logo-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
-    filter: blur(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-
-@keyframes industries-rail-draw {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-@keyframes industries-card-rise {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.96);
+    transform: translateY(8px) scale(0.94);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
-
-/* Fires every time the panel's `key` changes (new industry selected) */
-@keyframes industries-panel-swap {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.industry-accordion-item .industry-accordion-logo {
+  opacity: 0;
+}
+.industry-accordion-item.is-active .industry-accordion-logo {
+  animation: accordion-logo-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--logo-delay, 0ms) + 0.25s);
 }
 
-@keyframes industries-logo-pop {
+/* Sidebar items rise in with a soft stagger when the section enters view */
+@keyframes industry-sidebar-rise {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.industries-reveal .industry-sidebar-item {
+  opacity: 0;
+}
+.industries-reveal.in-view .industry-sidebar-item {
+  animation: industry-sidebar-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Panel swap — triggered by React `key` on the content wrapper when the
+   selected industry changes. Header + grid cross-fade with a slight slide. */
+@keyframes industry-panel-swap {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.industry-panel-header {
+  animation: industry-panel-swap 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.industry-panel-rail {
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: industry-rail-grow 0.55s cubic-bezier(0.76, 0, 0.24, 1) 0.2s forwards;
+}
+@keyframes industry-rail-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Logo tiles pop in with a cascade based on `--logo-delay` */
+@keyframes industry-logo-pop {
   from {
     opacity: 0;
     transform: translateY(10px) scale(0.9);
@@ -308,80 +380,22 @@ section[id] {
     filter: blur(0);
   }
 }
-
-/* Hidden initial state */
-.industries-reveal .industries-label,
-.industries-reveal .industries-headline,
-.industries-reveal .industries-sub,
-.industries-reveal .industries-divider,
-.industries-reveal .industry-card {
-  opacity: 0;
+.industry-logo-cell {
+  animation: industry-logo-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--logo-delay, 0ms) + 0.3s);
 }
 
-.industries-reveal .industries-rail,
-.industries-reveal .industries-divider {
-  transform: scaleX(0);
-  transform-origin: left center;
-}
-
-/* Header cascade on viewport entry */
-.industries-reveal.in-view .industries-label {
-  animation: industries-fade-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.08s forwards;
-}
-.industries-reveal.in-view .industries-rail {
-  animation: industries-rail-draw 0.7s cubic-bezier(0.76, 0, 0.24, 1) 0.22s forwards;
-}
-.industries-reveal.in-view .industries-headline {
-  animation: industries-fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.35s forwards;
-}
-.industries-reveal.in-view .industries-sub {
-  animation: industries-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.5s forwards;
-}
-
-/* Industry card stagger */
-.industries-reveal.in-view .industry-card {
-  animation: industries-card-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.industries-reveal.in-view .industry-card:nth-child(1) { animation-delay: 0.65s; }
-.industries-reveal.in-view .industry-card:nth-child(2) { animation-delay: 0.73s; }
-.industries-reveal.in-view .industry-card:nth-child(3) { animation-delay: 0.81s; }
-.industries-reveal.in-view .industry-card:nth-child(4) { animation-delay: 0.89s; }
-.industries-reveal.in-view .industry-card:nth-child(5) { animation-delay: 0.97s; }
-
-.industries-reveal.in-view .industries-divider {
-  animation: industries-rail-draw 0.9s cubic-bezier(0.76, 0, 0.24, 1) 1.1s forwards;
-}
-
-/* Panel swap — triggers each time the selected industry changes
-   (parent uses React key to force remount) */
-.industries-panel {
-  animation: industries-panel-swap 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* Each logo pops in with a short cascade when the panel renders */
-.industries-logo-cell {
-  animation: industries-logo-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(var(--logo-delay, 0ms) + 0.15s);
-}
-
-/* Reduced-motion: skip reveal/stagger entirely */
 @media (prefers-reduced-motion: reduce) {
-  .industries-reveal .industries-label,
-  .industries-reveal .industries-headline,
-  .industries-reveal .industries-sub,
-  .industries-reveal .industry-card,
-  .industries-reveal .industries-divider {
-    opacity: 1;
-  }
-  .industries-reveal .industries-rail,
-  .industries-reveal .industries-divider {
-    transform: scaleX(1);
-  }
-  .industries-panel,
-  .industries-logo-cell {
+  .industries-reveal .industry-sidebar-item,
+  .industry-panel-header,
+  .industry-panel-rail,
+  .industry-logo-cell,
+  .industry-accordion-item.is-active .industry-accordion-logo,
+  .industry-accordion-panel {
     animation: none;
     opacity: 1;
     transform: none;
+    transition: none;
   }
 }
 
